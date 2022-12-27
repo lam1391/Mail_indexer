@@ -7,9 +7,11 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -32,24 +34,24 @@ import (
 // 	content                   string
 // }
 
-type Mailstructur2 struct {
+type Mailstruct struct {
 	fieldA string
 	fieldB []map[string]any
 }
 
-type Mailstructur struct {
+type MailJson struct {
 	FieldA string           `json:"index"`
 	FieldB []map[string]any `json:"records"`
 }
 
-func (t *Mailstructur2) MarshalJSON() ([]byte, error) {
-	return json.Marshal(Mailstructur{
+func (t *Mailstruct) MarshalJSON() ([]byte, error) {
+	return json.Marshal(MailJson{
 		t.fieldA,
 		t.fieldB,
 	})
 }
 
-func zinSearchUpLoad(data []byte) {
+func zinSearch_upload(data []byte) {
 
 	user := "admin"
 	password := "Complexpass#123"
@@ -80,42 +82,41 @@ func zinSearchUpLoad(data []byte) {
 	} else {
 		log.Println(resp.StatusCode)
 	}
-	// body, err := io.ReadAll(resp.Body)
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// fmt.Println(string(body))
 
 	fmt.Println("ok status: ", counter)
 
 }
 
-func ParseFileToJson(fileContent string) map[string]any {
+func get_mail_map_format(fileContent string) map[string]any {
 
-	partOfMail := []string{"Message-ID", "Date", "From", "To", "Subject", "Mime-Version", "Content-Type",
+	part_of_mail_list := []string{"Message-ID", "Date", "From", "To", "Subject", "Mime-Version", "Content-Type",
 		"Content-Transfer-Encoding", "X-From", "X-To", "X-cc", "X-bcc", "X-Folder", "X-Origin", "X-FileName", "body"}
 
-	mapMail := make(map[string]any)
+	map_mail := make(map[string]any)
 
-	pos_last := 0
+	pos_final := 0
 	pos_ini := 0
-	for i, j := range partOfMail {
-		k := j + ":"
-		if i < 14 {
-			pos_ini = strings.Index(fileContent, k) + len(k)
-			pos_last = strings.Index(fileContent, partOfMail[i+1])
+
+	for index_part_of_mail, part_of_mail := range part_of_mail_list {
+
+		part_of_mail_2 := part_of_mail + ":"
+
+		if index_part_of_mail < 14 {
+
+			pos_ini = strings.Index(fileContent, part_of_mail_2) + len(part_of_mail_2)
+			pos_final = strings.Index(fileContent, part_of_mail_list[index_part_of_mail+1])
 
 		} else {
-			if i == 14 {
-				pos_ini = strings.Index(fileContent, k) + len(k)
-				pos_last = strings.Index(fileContent, ".nsf")
-				if pos_last == -1 {
-					pos_last = strings.Index(fileContent, ".pst")
+			if index_part_of_mail == 14 {
+				pos_ini = strings.Index(fileContent, part_of_mail_2) + len(part_of_mail_2)
+				pos_final = strings.Index(fileContent, ".nsf")
+				if pos_final == -1 {
+					pos_final = strings.Index(fileContent, ".pst")
 				}
-				pos_last += 4
+				pos_final += 4
 			}
 
-			if i == 15 {
+			if index_part_of_mail == 15 {
 				pos_ini = strings.Index(fileContent, ".pst")
 				if pos_ini == -1 {
 					pos_ini = strings.Index(fileContent, ".nsf")
@@ -125,24 +126,25 @@ func ParseFileToJson(fileContent string) map[string]any {
 			}
 		}
 
-		if pos_last >= pos_ini {
-			if i != 15 {
-				mapMail[j] = strings.TrimSpace(fileContent[pos_ini:pos_last])
+		if pos_final >= pos_ini {
+			if index_part_of_mail != 15 {
+				map_mail[part_of_mail] = strings.TrimSpace(fileContent[pos_ini:pos_final])
 			} else {
-				mapMail[j] = strings.TrimSpace(fileContent[pos_ini:])
+				map_mail[part_of_mail] = strings.TrimSpace(fileContent[pos_ini:])
 			}
 		} else {
-			mapMail[j] = ""
+			map_mail[part_of_mail] = ""
 		}
 	}
 
-	return mapMail
+	return map_mail
 
 }
 
-func getMailDir(pathMailDir string) []string {
+func get_mails(pathMailDir string) []string {
 	files := []string{}
 
+	//walk throught all directory ignoring all diferent from a file
 	err := filepath.Walk(pathMailDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			fmt.Println(err)
@@ -151,7 +153,6 @@ func getMailDir(pathMailDir string) []string {
 
 		if !info.IsDir() {
 			files = append(files, path)
-
 		}
 
 		return nil
@@ -162,83 +163,89 @@ func getMailDir(pathMailDir string) []string {
 	}
 
 	return files
-
 }
 
-func convertFilesToJson(listFiles []string) []byte {
+func files_to_json_format(listFiles []string) []byte {
 
-	listJsonToSend := []map[string]any{}
-	// mapMail := map[string]any{}
+	list_of_mail := []map[string]any{}
 
 	for i, j := range listFiles {
 
-		// get file from terminal
-		inputFile := j
+		input_file := j
 		// read the whole content of file and pass it to file variable, in case of error pass it to err variable
-		file, err := ioutil.ReadFile(inputFile)
+		file, err := ioutil.ReadFile(input_file)
 
 		if err != nil {
 			fmt.Printf("Could not read the file due to this %s error \n", err)
 		} else {
 
-			if i == 2 {
+			if i == 1000 {
 				break
 			}
-
-			// convert the file binary into a string using string
-			fileContent := string(file)
-			// jsonMail, err = ParseFileToJson(fileContent)
-			// mapMail = ParseFileToJson(fileContent)
-			jsonMail := ParseFileToJson(fileContent)
-
-			// if err != nil {
-			// 	fmt.Printf("Error: %s", err.Error())
-			// } else {
-			listJsonToSend = append(listJsonToSend, jsonMail)
-
-			// }
-
+			// convert the file into a map format and put into a list of map
+			file_content := string(file)
+			mail_map_format := get_mail_map_format(file_content)
+			list_of_mail = append(list_of_mail, mail_map_format)
 		}
 
 	}
 
-	temp := &Mailstructur2{"maildir", listJsonToSend}
-
-	json_file, err := json.Marshal(temp)
-
+	//convert the structure in a Json format
+	json_file, err := json.Marshal(&Mailstruct{"maildir", list_of_mail})
 	_ = ioutil.WriteFile("test.json", json_file, 0644)
 
 	if err != nil {
 		fmt.Printf("Error: %s", err.Error())
-	} else {
-		fmt.Println(string(json_file))
 	}
-
 	return json_file
 }
 
-func main() {
+func run(wg *sync.WaitGroup) {
+
+	defer wg.Done()
+	fmt.Printf("Start: %v\n", time.Now())
 
 	it := time.Now()
 	// printing the time in string format
 	fmt.Println("Current inicial date and time is: ", it.String())
 
-	// pathMailDir := "./cmd/main/enron_mail_20110402/maildir/allen-p/"
-	pathMailDir := "./enron_mail_20110402/maildir/allen-p/_sent_mail"
+	pathMailDir := "./enron_mail_20110402/maildir/"
+	// pathMailDir := "./enron_mail_20110402/maildir/allen-p/_sent_mail"
 
-	listFiles := getMailDir(pathMailDir)
+	list_of_files := get_mails(pathMailDir)
 
-	if len(listFiles) > 0 {
+	if len(list_of_files) > 0 {
 
-		mails := convertFilesToJson(listFiles)
-		if len(mails) > 0 {
-			zinSearchUpLoad(mails)
+		json_mails := files_to_json_format(list_of_files)
+		if len(json_mails) > 0 {
+			zinSearch_upload(json_mails)
 		}
 
 		ft := time.Since(it)
 		// printing the time in string format
 		fmt.Println("execution time: ", ft.String())
+		fmt.Printf("End: %v\n", time.Now())
 
 	}
+
+}
+
+func main() {
+
+	var wg sync.WaitGroup
+
+	// Server for pprof
+	go func() {
+		fmt.Println(http.ListenAndServe("localhost:6060", nil))
+	}()
+	wg.Add(1) // pprof - so we won't exit prematurely
+	wg.Add(1) // for the hardWork
+
+	go run(&wg)
+	wg.Wait()
+
+	//.........................................................................................................
+
+	//.........................................................................................................
 
 }
