@@ -169,7 +169,7 @@ func files_to_json_format(listFiles []string) []byte {
 
 	list_of_mail := []map[string]any{}
 
-	for i, j := range listFiles {
+	for _, j := range listFiles {
 
 		input_file := j
 		// read the whole content of file and pass it to file variable, in case of error pass it to err variable
@@ -179,9 +179,10 @@ func files_to_json_format(listFiles []string) []byte {
 			fmt.Printf("Could not read the file due to this %s error \n", err)
 		} else {
 
-			if i == 1000 {
-				break
-			}
+			// if i == 100000 {
+			// 	break
+			// }
+
 			// convert the file into a map format and put into a list of map
 			file_content := string(file)
 			mail_map_format := get_mail_map_format(file_content)
@@ -192,7 +193,7 @@ func files_to_json_format(listFiles []string) []byte {
 
 	//convert the structure in a Json format
 	json_file, err := json.Marshal(&Mailstruct{"maildir", list_of_mail})
-	_ = ioutil.WriteFile("test.json", json_file, 0644)
+	// _ = ioutil.WriteFile("test.json", json_file, 0644)
 
 	if err != nil {
 		fmt.Printf("Error: %s", err.Error())
@@ -212,11 +213,22 @@ func run(wg *sync.WaitGroup) {
 	pathMailDir := "./enron_mail_20110402/maildir/"
 	// pathMailDir := "./enron_mail_20110402/maildir/allen-p/_sent_mail"
 
+	mi := time.Now()
 	list_of_files := get_mails(pathMailDir)
+
+	mt := time.Since(mi)
+	// printing the time in string format
+	fmt.Println("execution get mail directory time: ", mt.String())
 
 	if len(list_of_files) > 0 {
 
+		ji := time.Now()
 		json_mails := files_to_json_format(list_of_files)
+
+		jt := time.Since(ji)
+		// printing the time in string format
+		fmt.Println("execution get mail directory time: ", jt.String())
+
 		if len(json_mails) > 0 {
 			zinSearch_upload(json_mails)
 		}
