@@ -32,4 +32,7 @@ go.work
 # all json generated
 *.json
 
+# all env enviroment variables
+.env
+
 # End of https://www.toptal.com/developers/gitignore/api/go
