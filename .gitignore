@@ -33,6 +33,6 @@ go.work
 *.json
 
 # all env enviroment variables
-.env
+*.env
 
 # End of https://www.toptal.com/developers/gitignore/api/go
