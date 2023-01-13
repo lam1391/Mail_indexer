@@ -40,7 +40,7 @@ func main() {
 
 	if len(os.Args) > 1 {
 		fmt.Println(os.Args[1])
-		pathMailDir = "./" + os.Args[1] + "/" + index + "/allen-p/sent_mail/"
+		pathMailDir = "./" + os.Args[1] + "/maildir/"
 
 	}
 
@@ -60,16 +60,19 @@ func main() {
 	// printing the time in string format
 	fmt.Println("execution get_all_files time: ", mt.String())
 
-	limit := len(list_of_files) / 2
+	if len(list_of_files) > 0 {
 
-	list_of_files_1 := list_of_files[0:limit]
-	list_of_files_2 := list_of_files[limit:]
+		limit := len(list_of_files) / 2
 
-	wg.Add(1)
-	go run(index, list_of_files_1, &wg)
+		list_of_files_1 := list_of_files[0:limit]
+		list_of_files_2 := list_of_files[limit:]
 
-	wg.Add(1)
-	go run(index, list_of_files_2, &wg)
+		wg.Add(1)
+		go run(index, list_of_files_1, &wg)
+
+		wg.Add(1)
+		go run(index, list_of_files_2, &wg)
+	}
 
 	wg.Wait()
 
