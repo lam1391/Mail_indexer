@@ -201,44 +201,20 @@ func files_to_json_format(listFiles []string) []byte {
 	return json_file
 }
 
-func run(wg *sync.WaitGroup) {
-
+func run(list_of_files []string, wg *sync.WaitGroup) {
 	defer wg.Done()
-	fmt.Printf("Start: %v\n", time.Now())
 
-	it := time.Now()
-	// printing the time in string format
-	fmt.Println("Current inicial date and time is: ", it.String())
+	ji := time.Now()
+	json_mails := files_to_json_format(list_of_files)
 
-	pathMailDir := "./enron_mail_20110402/maildir/"
-	// pathMailDir := "./enron_mail_20110402/maildir/allen-p/_sent_mail"
-
-	mi := time.Now()
-	list_of_files := get_mails(pathMailDir)
-
-	mt := time.Since(mi)
-	// printing the time in string format
-	fmt.Println("execution get mail directory time: ", mt.String())
-
-	if len(list_of_files) > 0 {
-
-		ji := time.Now()
-		json_mails := files_to_json_format(list_of_files)
-
-		jt := time.Since(ji)
-		// printing the time in string format
-		fmt.Println("execution get mail directory time: ", jt.String())
-
-		if len(json_mails) > 0 {
-			zinSearch_upload(json_mails)
-		}
-
-		ft := time.Since(it)
-		// printing the time in string format
-		fmt.Println("execution time: ", ft.String())
-		fmt.Printf("End: %v\n", time.Now())
-
+	if len(json_mails) > 0 {
+		zinSearch_upload(json_mails)
 	}
+
+	ft := time.Since(ji)
+	// printing the time in string format
+	fmt.Println("execution time: ", ft.String())
+	fmt.Printf("End: %v\n", time.Now())
 
 }
 
@@ -251,13 +227,36 @@ func main() {
 		fmt.Println(http.ListenAndServe("localhost:6060", nil))
 	}()
 	wg.Add(1) // pprof - so we won't exit prematurely
-	wg.Add(1) // for the hardWork
 
-	go run(&wg)
+	fmt.Printf("start: %v\n", time.Now())
+
+	pathMailDir := "./enron_mail_20110402/maildir/"
+
+	mi := time.Now()
+	list_of_files := get_mails(pathMailDir)
+	mt := time.Since(mi)
+	// printing the time in string format
+	fmt.Println("execution get mail directory time: ", mt.String())
+
+	// tamanio = len(list_of_files)
+
+	list_of_files_1 := list_of_files[0:100000]
+	list_of_files_2 := list_of_files[100000:200000]
+	list_of_files_3 := list_of_files[200000:300000]
+	list_of_files_4 := list_of_files[300000:400000]
+	list_of_files_5 := list_of_files[400000:]
+
+	wg.Add(1) // for mail process
+	go run(list_of_files_1, &wg)
+	wg.Add(1) // for mail process
+	go run(list_of_files_2, &wg)
+	wg.Add(1) // for mail process
+	go run(list_of_files_3, &wg)
+	wg.Add(1) // for mail process
+	go run(list_of_files_4, &wg)
+	wg.Add(1) // for mail process
+	go run(list_of_files_5, &wg)
+
 	wg.Wait()
-
-	//.........................................................................................................
-
-	//.........................................................................................................
 
 }
