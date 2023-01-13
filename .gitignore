@@ -1,5 +1,4 @@
 /cmd/main/enron_mail_20110402
-
 # Created by https://www.toptal.com/developers/gitignore/api/go
 # Edit at https://www.toptal.com/developers/gitignore?templates=go
 
@@ -33,6 +32,7 @@ go.work
 *.json
 
 # all env enviroment variables
+
 *.env
 
 # End of https://www.toptal.com/developers/gitignore/api/go
