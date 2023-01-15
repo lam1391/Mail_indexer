@@ -15,7 +15,7 @@ import (
 // excute the process to bulk the directory
 // first convert the files into a json structur
 // then call api zincsearch to upload the data
-func run(index string, list_of_files []string, wg *sync.WaitGroup) {
+func do_process(index string, list_of_files []string, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	ji := time.Now()
@@ -42,6 +42,8 @@ func main() {
 		fmt.Println(os.Args[1])
 		pathMailDir = "./" + os.Args[1] + "/maildir/"
 
+	} else {
+		pathMailDir = "./enron_mail_20110402/maildir/"
 	}
 
 	var wg sync.WaitGroup
@@ -64,14 +66,15 @@ func main() {
 
 		limit := len(list_of_files) / 2
 
+		//divide the array in 2 parts to use the concurrency
 		list_of_files_1 := list_of_files[0:limit]
 		list_of_files_2 := list_of_files[limit:]
 
 		wg.Add(1)
-		go run(index, list_of_files_1, &wg)
+		go do_process(index, list_of_files_1, &wg)
 
 		wg.Add(1)
-		go run(index, list_of_files_2, &wg)
+		go do_process(index, list_of_files_2, &wg)
 	}
 
 	wg.Wait()
