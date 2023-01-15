@@ -1,7 +1,7 @@
 
 # Mail indexer
 
-Api indexer toma un directorio de archivos y los sube a zincsearch a traves de su propia API 
+Mail indexer takes a directory of files and transforms them into semi-structured data and uploads them to zinc search through its own API. 
 
 
 ## Environment Variables
