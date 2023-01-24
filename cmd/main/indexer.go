@@ -31,7 +31,6 @@ func do_process(index string, list_of_files []string, wg *sync.WaitGroup) {
 	// printing the time in string format
 	fmt.Println("execution time: ", ft.String())
 	fmt.Printf("End: %v\n", time.Now())
-	print("hola")
 
 }
 
